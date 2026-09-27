@@ -254,12 +254,13 @@ def main() -> None:
         interval=14400,
         first=0,
     )
+    
+    # Call the function to create a socket and listen to a port
+    create_socket()
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
-    # Call the function to create a socket and listen to a port
-    create_socket()
 
 if __name__ == "__main__":
     main()
