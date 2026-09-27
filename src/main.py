@@ -194,7 +194,7 @@ def get_ticker(user_id: int) -> tuple[Any]:
     result = cursor.fetchall()
     return result  
 
-def create_socket(host='localhost', port=443):
+def create_socket(host='127.0.0.1', port=PORT):
     """
     This function creates a socket that listens to a specific port.
     
