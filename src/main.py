@@ -24,6 +24,7 @@ from typing import Any
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
+from datetime import datetime, timedelta
 
 # Enable logging
 logging.basicConfig(
@@ -44,6 +45,8 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PORT = os.getenv('DB_PORT')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+PORT = os.getenv('PORT')
 
 conn = psycopg2.connect(database=DB_NAME,
                         host=DB_HOST,
@@ -133,18 +136,20 @@ async def job(context: ContextTypes.DEFAULT_TYPE) -> None:
         tickers = get_ticker(int(user[0]))
         logger.info("tickers of %s: %s", user[2], list(tickers))
     
-        for ticker in list(tickers[0]):
-            dat = yf.Ticker(ticker)
+        for ticker in list(tickers):
+            logger.info("ticker %s", ticker)
+            dat = yf.Ticker(ticker[0])
             info = dat.info
 
             # logger.info(dat.history(period="1mo", interval="1d"))
-            value = dat.history(start="2026-07-23", end="2026-07-24", interval="1d", rounding=True)
+            value = dat.history(start=datetime.today().replace(day=1), end=datetime.today().replace(day=2), interval="1d", rounding=True)
             firstDayOfTheMonth = value["Close"].iloc[0]
-            #logger.info("firstDay: %s", firstDayOfTheMonth)
+            logger.info("firstDay: %s", firstDayOfTheMonth)
 
-            value = dat.history(start="2026-07-28", end="2026-07-29", interval="1d", rounding=True)
-            today = value["Close"].iloc[0]
-            #logger.info("today: %s", today)
+            # value = dat.history(start=datetime.today(), end=datetime.today() - timedelta(days=1), interval="1d", rounding=True)
+            value = dat.history()
+            today = value["Close"].iloc[-1]
+            logger.info("today: %s", today)
     
             diff = today - firstDayOfTheMonth
             changes = diff * 100 / firstDayOfTheMonth
@@ -213,7 +218,7 @@ def main() -> None:
     # cronjob
     application.job_queue.run_repeating(
         job,
-        interval=900,
+        interval=14400,
         first=0,
     )
 
