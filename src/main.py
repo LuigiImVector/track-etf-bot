@@ -16,12 +16,13 @@ bot.
 """
 
 import logging
-from typing import Any
 import yfinance as yf
-import pandas as pd
 import psycopg2
+import os
 
-from telegram import ForceReply, Update
+from typing import Any
+from dotenv import load_dotenv
+from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
 # Enable logging
@@ -35,11 +36,20 @@ logger = logging.getLogger(__name__)
 
 INS_TICKER, SAVE_TICKER = range(2)
 
-conn = psycopg2.connect(database="track-etf-bot",
-                        host="127.0.0.1",
-                        user="postgres",
-                        password="postgres",
-                        port="5432")
+load_dotenv()
+
+DB_NAME = os.getenv('DB_NAME')
+DB_HOST = os.getenv('DB_HOST')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_PORT = os.getenv('DB_PORT')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+conn = psycopg2.connect(database=DB_NAME,
+                        host=DB_HOST,
+                        user=DB_USER,
+                        password=DB_PASSWORD,
+                        port=DB_PORT)
 
 cursor = conn.cursor()
 
@@ -121,7 +131,7 @@ async def job(context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.info("user: %s", user)
 
         tickers = get_ticker(int(user[0]))
-        logger.info("tickers of %s: %s", user[3], list(tickers))
+        logger.info("tickers of %s: %s", user[2], list(tickers))
     
         for ticker in list(tickers[0]):
             dat = yf.Ticker(ticker)
@@ -131,7 +141,7 @@ async def job(context: ContextTypes.DEFAULT_TYPE) -> None:
             value = dat.history(start="2026-07-23", end="2026-07-24", interval="1d", rounding=True)
             firstDayOfTheMonth = value["Close"].iloc[0]
             #logger.info("firstDay: %s", firstDayOfTheMonth)
-    
+
             value = dat.history(start="2026-07-28", end="2026-07-29", interval="1d", rounding=True)
             today = value["Close"].iloc[0]
             #logger.info("today: %s", today)
@@ -181,7 +191,7 @@ def get_ticker(user_id: int) -> tuple[Any]:
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
-    application = Application.builder().token("8971285224:AAG51SkyJOMO_F68v-Xi68m5tr1kgqrF0ws").build()
+    application = Application.builder().token(BOT_TOKEN).build()
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))

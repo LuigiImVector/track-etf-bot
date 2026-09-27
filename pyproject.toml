@@ -1,0 +1,23 @@
+[project]
+name = "track-etf-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "LuigiImVector", email = "59611597+LuigiImVector@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "psycopg2>=2.9.13",
+    "python-dotenv>=1.2.3",
+    "python-telegram-bot[job-queue]>=22.8",
+    "telegram>=0.0.1",
+    "yfinance>=1.7.0",
+]
+
+[project.scripts]
+track-etf-bot = "track_etf_bot:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
