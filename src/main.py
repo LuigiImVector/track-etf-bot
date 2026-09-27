@@ -15,6 +15,7 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 
+import socket
 import logging
 import yfinance as yf
 import psycopg2
@@ -24,7 +25,7 @@ from typing import Any
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Enable logging
 logging.basicConfig(
@@ -193,6 +194,38 @@ def get_ticker(user_id: int) -> tuple[Any]:
     result = cursor.fetchall()
     return result  
 
+def create_socket(host='localhost', port=443):
+    """
+    This function creates a socket that listens to a specific port.
+    
+    Parameters:
+    host (str): The host where the server is running. Default is localhost.
+    port (int): The port number to listen to. Default is 12345.
+    
+    Returns:
+    None
+    """
+    # Create a socket object
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Bind the socket to the host and port
+    s.bind((host, port))
+
+    # Listen to the port
+    s.listen(5)
+    logger.info(f"Socket is listening on {host}:{port}")
+
+    while True:
+        # Establish connection with client
+        c, addr = s.accept()
+        logger.info(f"Got connection from {addr}")
+
+        # Send a thank you message to the client
+        c.send(b'Thank you for connecting')
+
+        # Close the connection
+        c.close()
+
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
@@ -224,6 +257,9 @@ def main() -> None:
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    # Call the function to create a socket and listen to a port
+    create_socket()
 
 if __name__ == "__main__":
     main()
