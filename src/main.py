@@ -15,12 +15,14 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 
-import socket
+import asyncio
+import os
+import threading
 import logging
 import yfinance as yf
 import psycopg2
-import os
 
+from aiohttp import web
 from typing import Any
 from dotenv import load_dotenv
 from telegram import Update
@@ -46,8 +48,6 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_PORT = os.getenv('DB_PORT')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-
-PORT = os.getenv('PORT')
 
 conn = psycopg2.connect(database=DB_NAME,
                         host=DB_HOST,
@@ -194,40 +194,45 @@ def get_ticker(user_id: int) -> tuple[Any]:
     result = cursor.fetchall()
     return result  
 
-def create_socket(host='127.0.0.1', port=PORT):
-    """
-    This function creates a socket that listens to a specific port.
-    
-    Parameters:
-    host (str): The host where the server is running. Default is localhost.
-    port (int): The port number to listen to. Default is 12345.
-    
-    Returns:
-    None
-    """
-    # Create a socket object
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+async def health(request):
+    return web.Response(text="OK")
 
-    # Bind the socket to the host and port
-    s.bind((host, port))
 
-    # Listen to the port
-    s.listen(5)
-    logger.info(f"Socket is listening on {host}:{port}")
+async def http_server():
+    app = web.Application()
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
 
-    while True:
-        # Establish connection with client
-        c, addr = s.accept()
-        logger.info(f"Got connection from {addr}")
+    runner = web.AppRunner(app)
+    await runner.setup()
 
-        # Send a thank you message to the client
-        c.send(b'Thank you for connecting')
+    port = int(os.environ.get("PORT", 10000))
 
-        # Close the connection
-        c.close()
+    site = web.TCPSite(
+        runner,
+        host="0.0.0.0",
+        port=port,
+    )
+
+    await site.start()
+
+    logger.info(f"HTTP server listening on 0.0.0.0:{port}")
+
+    # Mantieni vivo il server
+    await asyncio.Event().wait()
+
+
+def run_http_server():
+    asyncio.run(http_server())
 
 def main() -> None:
     """Start the bot."""
+    thread = threading.Thread(
+        target=run_http_server,
+        daemon=True,
+    )
+    thread.start()
+
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(BOT_TOKEN).build()
 
@@ -254,9 +259,6 @@ def main() -> None:
         interval=14400,
         first=0,
     )
-    
-    # Call the function to create a socket and listen to a port
-    create_socket()
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
