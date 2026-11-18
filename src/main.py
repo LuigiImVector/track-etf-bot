@@ -127,6 +127,14 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def job(context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("job(): cronjob started")
 
+    conn = psycopg2.connect(database=DB_NAME,
+                        host=DB_HOST,
+                        user=DB_USER,
+                        password=DB_PASSWORD,
+                        port=DB_PORT)
+
+    cursor = conn.cursor()
+
     cursor.execute("SELECT id, uuid_account, username FROM user_account")
     users = cursor.fetchall()
     logger.info("users: %s", list(users))
@@ -168,6 +176,14 @@ async def job(context: ContextTypes.DEFAULT_TYPE) -> None:
             await context.bot.send_message(chat_id=user[1], text=output)
 
 def check_user(uuid_account, username) -> int:
+    conn = psycopg2.connect(database=DB_NAME,
+                        host=DB_HOST,
+                        user=DB_USER,
+                        password=DB_PASSWORD,
+                        port=DB_PORT)
+
+    cursor = conn.cursor()
+
     cursor.execute("SELECT * FROM user_account WHERE uuid_account = %s", (str(uuid_account),))
     result = cursor.fetchone()
 
@@ -186,10 +202,26 @@ def check_user(uuid_account, username) -> int:
     return user_id
 
 def insert_ticker_db(user_id: int, ticker: str) -> None:
+    conn = psycopg2.connect(database=DB_NAME,
+                        host=DB_HOST,
+                        user=DB_USER,
+                        password=DB_PASSWORD,
+                        port=DB_PORT)
+
+    cursor = conn.cursor()
+
     cursor.execute("INSERT INTO ticker VALUES (DEFAULT, %s, %s)", (ticker, user_id,))
     conn.commit();
 
 def get_ticker(user_id: int) -> tuple[Any]:
+    conn = psycopg2.connect(database=DB_NAME,
+                        host=DB_HOST,
+                        user=DB_USER,
+                        password=DB_PASSWORD,
+                        port=DB_PORT)
+
+    cursor = conn.cursor()
+    
     cursor.execute("SELECT ticker FROM ticker WHERE user_account_id = %s", (user_id,))
     result = cursor.fetchall()
     return result  
